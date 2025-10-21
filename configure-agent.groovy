@@ -5,8 +5,8 @@ import hudson.model.Node
 import com.cloudbees.plugins.credentials.CredentialsScope
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider
 import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey
-// 🟢 FIX: Import the inner class used to pass the private key string
-import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey.StringCredentialsSource 
+// Use '$' to import a static inner class in Groovy
+import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey$StringCredentialsSource
 
 // --- Configuration Variables ---
 def privateKeyFile = new File("/var/lib/jenkins/.ssh/id_rsa")
@@ -25,7 +25,7 @@ def sshCred = new BasicSSHUserPrivateKey(
     CredentialsScope.GLOBAL,
     sshCredId,
     "jenkins", // The user created on the agent VM
-    new StringCredentialsSource(privateKey), // 🟢 FIX: Correct usage of the imported inner class
+    new StringCredentialsSource(privateKey),
     null, // Passphrase (empty in this setup)
     "SSH Key for Jenkins Agent (${agentIp})"
 )
@@ -43,4 +43,22 @@ println "2. Adding Agent Node '${agentName}'..."
 
 def slave = new DumbSlave(
     agentName,
-    "Jenkins Agent for R&D pipelines running
+    "Jenkins Agent for R&D pipelines running on Vagrant",
+    remoteRootDir,
+    String.valueOf(numExecutors), // Number of executors as a String
+    Node.Mode.NORMAL,
+    labels,
+    new hudson.plugins.sshslaves.SSHLauncher(
+        agentIp,
+        22, // Default SSH Port
+        sshCredId // The credential ID created above
+    ),
+    Computer.threadPoolForRemoting,
+    null // Node properties
+)
+
+// Remove existing node if it exists to allow re-provisioning
+Jenkins.instance.removeNode(Jenkins.instance.getNode(agentName))
+Jenkins.instance.addNode(slave)
+
+println "Agent Node '${agentName}' added. Jenkins is attempting to connect to ${agentIp} now."

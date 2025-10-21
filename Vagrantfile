@@ -45,7 +45,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       echo "export JENKINS_INIT_PASSWORD=$JENKINS_INIT_PASSWORD" | sudo tee /etc/profile.d/jenkins_vars.sh > /dev/null
 
       echo "Installing required plugins for SSH and Credentials..."
-      sudo /usr/bin/java -jar /home/vagrant/jenkins-cli.jar -s http://127.0.0.1:8080/ -auth admin:$JENKINS_INIT_PASSWORD install-plugin credentials ssh-credentials git
+      sudo /usr/bin/java -jar /home/vagrant/jenkins-cli.jar -s http://127.0.0.1:8080/ -auth admin:$JENKINS_INIT_PASSWORD install-plugin credentials ssh-credentials ssh-slaves git
       
       echo "Restarting Jenkins to apply new plugins..."
       sudo /usr/bin/java -jar /home/vagrant/jenkins-cli.jar -s http://127.0.0.1:8080/ -auth admin:$JENKINS_INIT_PASSWORD safe-restart
