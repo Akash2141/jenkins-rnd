@@ -1,0 +1,40 @@
+---
+- name: Install OpenJDK 17
+  ansible.builtin.apt:
+    name: openjdk-17-jdk
+    state: present
+    update_cache: yes
+
+- name: Add Jenkins APT repository key
+  ansible.builtin.apt_key:
+    url: https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+    state: present
+
+- name: Add Jenkins repository to sources list
+  ansible.builtin.apt_repository:
+    repo: deb https://pkg.jenkins.io/debian-stable binary/
+    state: present
+    filename: jenkins
+
+- name: Install Jenkins
+  ansible.builtin.apt:
+    name: jenkins
+    state: present
+
+- name: Wait for Jenkins to start (using URL test)
+  ansible.builtin.wait_for:
+    url: "{{ jenkins_url }}/login"
+    status_code: 200
+    timeout: 300 # 5 minutes max wait time
+
+# --- Plugin Installation ---
+- name: Install required Jenkins plugins
+  community.general.jenkins_plugin:
+    name: "{{ item }}"
+    url: "{{ jenkins_url }}"
+    username: "{{ jenkins_user }}"
+    password: "{{ lookup('file', '/var/lib/jenkins/secrets/initialAdminPassword') }}"
+    timeout: 120
+    state: present
+  loop: "{{ jenkins_plugins }}"
+  # NOTE: The password lookup is safe ONLY on the master for the first run.

@@ -1,0 +1,58 @@
+---
+- name: Configure Jenkins Master
+  hosts: jenkins-master # Targets only the VM named 'jenkins-master'
+  become: yes
+  roles:
+    - master-role
+
+- name: Configure Jenkins Agents
+  hosts: jenkins-agent-1 # Targets all agent VMs
+  become: yes
+  roles:
+    - agent-role
+
+- name: Connect Agent to Master (The Orchestration Step)
+  hosts: jenkins-master # Run this task back on the master
+  become: yes
+  tasks:
+    - name: Get initial Jenkins Admin Password
+      ansible.builtin.shell: cat /var/lib/jenkins/secrets/initialAdminPassword
+      register: admin_pwd
+      delegate_to: jenkins-master
+      become: yes
+      run_once: yes
+
+    - name: Create SSH Credential using Admin Password
+      community.general.jenkins_credential:
+        credential_id: "{{ SSH_CRED_ID }}" # Defined in group_vars
+        credential_type: ssh_private_key
+        description: "SSH Key for Agent {{ inventory_hostname }}"
+        username: "{{ agent_user }}"
+        private_key: "{{ lookup('file', '/home/vagrant/.ssh/id_rsa') }}" # Read Vagrant's generated key
+        user: "{{ jenkins_user }}"
+        password: "{{ admin_pwd.stdout }}"
+        url: "{{ jenkins_url }}"
+        timeout: 60
+        state: present
+      delegate_to: localhost
+      loop_control:
+        label: "{{ item }}"
+      # NOTE: This task will need to be run for EACH agent added
+
+    - name: Create and Connect Jenkins Agent Node
+      community.general.jenkins_node:
+        name: "{{ item }}"
+        state: present
+        labels: "{{ agent_labels }}"
+        num_executors: 1
+        remote_fs: "{{ agent_home_dir }}"
+        launcher: ssh
+        launcher_params:
+          host: "{{ hostvars[item].ansible_host }}" # Get the agent's IP from Ansible's inventory
+          port: 22
+          credentialsId: "{{ SSH_CRED_ID }}"
+        user: "{{ jenkins_user }}"
+        password: "{{ admin_pwd.stdout }}"
+        url: "{{ jenkins_url }}"
+      delegate_to: localhost
+      loop: "{{ groups['all'] | difference(['jenkins-master']) }}" # Loop over all non-master VMs

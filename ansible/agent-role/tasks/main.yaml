@@ -1,0 +1,52 @@
+---
+- name: Install OpenJDK 17 and Git
+  ansible.builtin.apt:
+    name:
+      - openjdk-17-jdk
+      - git
+    state: present
+    update_cache: yes
+
+- name: Create 'jenkins' user account for the agent
+  ansible.builtin.user:
+    name: "{{ agent_user }}"
+    home: /home/{{ agent_user }}
+    state: present
+    groups: sudo
+    append: yes
+
+# --- SSH Key Exchange (The reliable way) ---
+- name: Ensure .ssh directory exists and has correct permissions
+  ansible.builtin.file:
+    path: /home/{{ agent_user }}/.ssh
+    state: directory
+    owner: "{{ agent_user }}"
+    group: "{{ agent_user }}"
+    mode: '0700'
+
+- name: Retrieve Jenkins Master's Public Key
+  # This task runs locally on the Ansible Control Node (your host)
+  ansible.builtin.shell:
+    # Use ssh-keyscan to get the master's public key (using the IP defined in Vagrantfile)
+    cmd: "ssh-keyscan -p 22 {{ jenkins_master_ip }}"
+  register: master_ssh_key
+  delegate_to: localhost
+  become: no
+
+- name: Add Master's Public Key to Agent's known_hosts
+  ansible.builtin.lineinfile:
+    path: /home/{{ agent_user }}/.ssh/known_hosts
+    line: "{{ master_ssh_key.stdout_lines[0] }}" # Assumes key is on first line
+    create: yes
+    state: present
+    owner: "{{ agent_user }}"
+    group: "{{ agent_user }}"
+    mode: '0644'
+
+- name: Create remote root directory
+  ansible.builtin.file:
+    path: "{{ agent_home_dir }}"
+    state: directory
+    owner: "{{ agent_user }}"
+    group: "{{ agent_user }}"
+    mode: '0755'

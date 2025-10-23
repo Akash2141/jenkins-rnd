@@ -1,0 +1,15 @@
+---
+# Jenkins Master connection settings
+jenkins_url: "http://{{ jenkins_master_ip }}:8080"
+jenkins_user: "admin"
+jenkins_api_token: "A_SECURE_TOKEN_GOES_HERE" # You will generate this after first boot
+jenkins_plugins:
+  - git
+  - pipeline
+  - ssh-slaves # Required for SSHLauncher
+  - credentials # Required for creating SSH Credential
+  
+# Jenkins Agent settings
+agent_user: "jenkins"
+agent_home_dir: "/home/jenkins/agent-workspace"
+agent_labels: "linux-slave"
