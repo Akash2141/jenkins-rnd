@@ -11,7 +11,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   
   config.vm.provider "virtualbox" do |vb|
     vb.customize [ "modifyvm", :id, "--uartmode1", "disconnected" ]
-    vb.name = "Jenkins_Ansible_Setup"
+    # vb.name = "Jenkins_Ansible_Setup"
   end
 
   # --- Jenkins Master VM ---
@@ -46,14 +46,14 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # end
 
   # --- Ansible Provisioning ---
-  config.vm.provision "ansible" do |ansible|
-    ansible.playbook = "ansible/site.yml"
-    # Ensure Ansible runs against all VMs defined above
-    ansible.limit = "all"
-    # Vagrant automatically builds the inventory file (ansible/inventory) for you
-    ansible.extra_vars = {
-      # Pass the master's IP for agents to use
-      jenkins_master_ip: "192.168.56.10" 
-    }
-  end
+  # config.vm.provision "ansible" do |ansible|
+  #   ansible.playbook = "ansible/site.yml"
+  #   # Ensure Ansible runs against all VMs defined above
+  #   ansible.limit = "all"
+  #   # Vagrant automatically builds the inventory file (ansible/inventory) for you
+  #   ansible.extra_vars = {
+  #     # Pass the master's IP for agents to use
+  #     jenkins_master_ip: "192.168.56.10" 
+  #   }
+  # end
 end
