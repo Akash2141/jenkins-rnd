@@ -2,19 +2,63 @@
 # vi: set ft=ruby :
 
 VAGRANTFILE_API_VERSION = "2"
+JENKINS_USER = "jenkins"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   
   # --- Common Settings ---
   config.vm.box = "ubuntu/jammy64"
-  config.ssh.insert_key = false # Use Vagrant's default insecure key for all machines
+  config.ssh.insert_key = false
   
   config.vm.provider "virtualbox" do |vb|
     vb.customize [ "modifyvm", :id, "--uartmode1", "disconnected" ]
-    # vb.name = "Jenkins_Ansible_Setup"
   end
 
-  # --- Jenkins Master VM ---
+  # --- 1. Ansible Control Node VM (Control Host) ---
+  config.vm.define "ansible-control" do |control|
+    control.vm.hostname = "ansible-control"
+    control.vm.network "private_network", ip: "192.168.56.5"
+    control.vm.provider "virtualbox" do |vb|
+      vb.memory = "1024"
+      vb.cpus = "1"
+    end
+    
+    # STEP 1: Install Ansible and the community.general collection
+    control.vm.provision "shell", inline: <<-SHELL
+      sudo apt-get update
+      # Install python and necessary tools
+      sudo apt-get install -y python3-pip git
+      
+      # Install Ansible and Ansible-Core
+      sudo pip3 install ansible
+      
+      # 🟢 CRITICAL FIX: Install the community.general collection (required for Jenkins modules)
+      # Must be run as the 'vagrant' user, not root (sudo), for user-level installation
+      sudo -H -u vagrant ansible-galaxy collection install community.general
+    SHELL
+    
+    # 🟢 FINAL SOLUTION: Execute Ansible Playbook via Shell Command 🟢
+    control.vm.provision "shell", privileged: true, run: "always", inline: <<-SHELL
+      MASTER_IP="192.168.56.10"
+      
+      echo "Waiting 10 seconds for file sync and network stability..."
+      sleep 10 
+      
+      echo "Executing Ansible playbook from inside the control node..."
+      
+      # Execute the playbook using the installed Ansible.
+      # The -i /etc/ansible/hosts relies on the Vagrant-generated inventory.
+      # The '--limit all' is redundant here but good practice if the playbook hosts are specific.
+      ansible-playbook /vagrant/ansible/site.yml \
+          -i /etc/ansible/hosts \
+          --limit all \
+          --extra-vars "jenkins_master_ip=$MASTER_IP"
+          
+      echo "Ansible execution finished."
+    SHELL
+  end
+
+  # --- 2. Jenkins Master VM (Target Host) ---
   config.vm.define "jenkins-master" do |master|
     master.vm.hostname = "jenkins-master"
     master.vm.network "forwarded_port", guest: 8080, host: 8080, id: "jenkins_web"
@@ -25,7 +69,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
   end
 
-  # --- Jenkins Agent VM (The first slave) ---
+  # --- 3. Jenkins Agent VM (Target Host) ---
   config.vm.define "jenkins-agent-1" do |agent|
     agent.vm.hostname = "jenkins-agent-1"
     agent.vm.network "private_network", ip: "192.168.56.20"
@@ -34,26 +78,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       vb.cpus = "1"
     end
   end
-  
-  # 💡 Scalability Example: Add jenkins-agent-2 for future testing
-  # config.vm.define "jenkins-agent-2" do |agent|
-  #   agent.vm.hostname = "jenkins-agent-2"
-  #   agent.vm.network "private_network", ip: "192.168.56.21"
-  #   agent.vm.provider "virtualbox" do |vb|
-  #     vb.memory = "2048"
-  #     vb.cpus = "1"
-  #   end
-  # end
 
-  # --- Ansible Provisioning ---
-  # config.vm.provision "ansible" do |ansible|
-  #   ansible.playbook = "ansible/site.yml"
-  #   # Ensure Ansible runs against all VMs defined above
-  #   ansible.limit = "all"
-  #   # Vagrant automatically builds the inventory file (ansible/inventory) for you
-  #   ansible.extra_vars = {
-  #     # Pass the master's IP for agents to use
-  #     jenkins_master_ip: "192.168.56.10" 
-  #   }
-  # end
+  # 🔴 REMOVED THE UNRELIABLE ANSIBLE_LOCAL BLOCK 🔴
 end
