@@ -37,3 +37,17 @@ Put it into authorized_keys: You can now take the contents of that .pub file and
 $ cat ~/.ssh/my_new_key.pub >> ~/.ssh/authorized_keys
 ```
 
+```sh
+# The -i flag points directly to your inventory file
+ansible jenkins-master -m ping -i /home/vagrant/ansible/hosts.ini
+```
+
+Channel 2: Jenkins Operation (jenkins-master -> jenkins-agent-1)
+This channel is used by the Jenkins master after it's been set up to connect to the agent and run jobs. This is completely separate from Ansible's communication.
+
+Who is connecting? The jenkins user on the jenkins-master VM.
+What does it need? A private key.
+Where should this private key be? The perfect location is the jenkins user's home directory, which is /var/lib/jenkins/.ssh/id_rsa on the jenkins-master VM. Your provision-master.sh script already creates this key correctly.
+What does the target (jenkins-agent-1) need? The corresponding public key (from /var/lib/jenkins/.ssh/id_rsa.pub) must be placed in the authorized_keys file of the user Jenkins will log in as on the agent. In your setup, this is the jenkins user, so the file is /home/jenkins/.ssh/authorized_keys on the jenkins-agent-1 VM.
+
+For Jenkins: You would ssh-keygen on the jenkins-master VM as the jenkins user. Then you would copy the contents of /var/lib/jenkins/.ssh/id_rsa.pub from jenkins-master into the /home/jenkins/.ssh/authorized_keys file on jenkins-agent-1.
