@@ -22,6 +22,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       vb.memory = "1024"
       vb.cpus = "1"
     end
+
+    control.vm.synced_folder "./ansible", "/home/vagrant/ansible"
     
     # STEP 1: Install Ansible and the community.general collection
     control.vm.provision "shell", inline: <<-SHELL
@@ -37,21 +39,13 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       sudo -H -u vagrant ansible-galaxy collection install community.general
     SHELL
     
-    # 🟢 FINAL SOLUTION: Execute Ansible Playbook via Shell Command 🟢
-    control.vm.provision "shell", privileged: true, run: "always", inline: <<-SHELL
+    # Execute Ansible Playbook as the 'vagrant' user
+    # 'privileged: false' ensures it runs as 'vagrant', who owns the Ansible collection.
+    control.vm.provision "shell", privileged: false, run: "always", inline: <<-SHELL
       MASTER_IP="192.168.56.10"
       
-      echo "Waiting 10 seconds for file sync and network stability..."
-      sleep 10 
-      
-      echo "Executing Ansible playbook from inside the control node..."
-      
       # Execute the playbook using the installed Ansible.
-      # The -i /etc/ansible/hosts relies on the Vagrant-generated inventory.
-      # The '--limit all' is redundant here but good practice if the playbook hosts are specific.
-      ansible-playbook /vagrant/ansible/site.yml \
-          -i /etc/ansible/hosts \
-          --limit all \
+      ansible-playbook /home/vagrant/ansible/site.yaml \
           --extra-vars "jenkins_master_ip=$MASTER_IP"
           
       echo "Ansible execution finished."
