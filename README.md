@@ -30,3 +30,10 @@ ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC...a-very-long-string... user@hostname
 - Part 1 (Type): ssh-rsa
 - Part 2 (Key Data): AAAAB3N...
 - Part 3 (Comment): user@hostname
+
+
+Put it into authorized_keys: You can now take the contents of that .pub file and add it to the ~/.ssh/authorized_keys file on the remote server you want to connect to.
+```sh
+$ cat ~/.ssh/my_new_key.pub >> ~/.ssh/authorized_keys
+```
+
