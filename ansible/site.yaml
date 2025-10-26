@@ -14,6 +14,7 @@
 - name: Connect Agent to Master (The Orchestration Step)
   hosts: jenkins-master # Run this task back on the master
   become: yes
+  tags: connect_agent
   tasks:
     - name: Get initial Jenkins Admin Password
       ansible.builtin.shell: cat /var/lib/jenkins/secrets/initialAdminPassword
@@ -28,9 +29,9 @@
         credential_type: ssh_private_key
         description: "SSH Key for Agent {{ inventory_hostname }}"
         username: "{{ agent_user }}"
-        private_key: "{{ lookup('file', '/home/vagrant/.ssh/id_rsa') }}" # Read Vagrant's generated key
-        user: "{{ jenkins_user }}"
-        password: "{{ admin_pwd.stdout }}"
+        private_key: "{{ lookup('file', '/home/vagrant/.ssh/jenkins') }}"
+        url_username: "{{ jenkins_user }}"
+        url_password: "{{ admin_pwd.stdout }}"
         url: "{{ jenkins_url }}"
         timeout: 60
         state: present
@@ -51,8 +52,8 @@
           host: "{{ hostvars[item].ansible_host }}" # Get the agent's IP from Ansible's inventory
           port: 22
           credentialsId: "{{ SSH_CRED_ID }}"
-        user: "{{ jenkins_user }}"
-        password: "{{ admin_pwd.stdout }}"
+        url_username: "{{ jenkins_user }}"
+        url_password: "{{ admin_pwd.stdout }}"
         url: "{{ jenkins_url }}"
       delegate_to: localhost
       loop: "{{ groups['all'] | difference(['jenkins-master']) }}" # Loop over all non-master VMs
