@@ -13,3 +13,6 @@ jenkins_plugins:
 agent_user: "jenkins"
 agent_home_dir: "/home/jenkins/agent-workspace"
 agent_labels: "linux-slave"
+
+# Credential ID for the SSH key used to connect to agents
+SSH_CRED_ID: "jenkins-agent-ssh-key"

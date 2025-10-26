@@ -22,18 +22,28 @@
     state: present
 
 - name: Wait for Jenkins to start (using URL test)
-  ansible.builtin.wait_for:
+  ansible.builtin.uri:
     url: "{{ jenkins_url }}/login"
-    status_code: 200
-    timeout: 300 # 5 minutes max wait time
+    method: GET
+    status_code: 200 # Checks specifically for a 200 OK status
+    validate_certs: no # Set to no for testing, use 'yes' in production with TLS
+  register: jenkins_status_check
+  until: jenkins_status_check.status == 200
+  retries: 60     # Number of times to retry (60 retries)
+  delay: 5
+
+- name: Get initial Jenkins Admin Password for plugin installation
+  ansible.builtin.shell: cat /var/lib/jenkins/secrets/initialAdminPassword
+  register: initial_admin_password
+  changed_when: false
 
 # --- Plugin Installation ---
 - name: Install required Jenkins plugins
   community.general.jenkins_plugin:
     name: "{{ item }}"
     url: "{{ jenkins_url }}"
-    username: "{{ jenkins_user }}"
-    password: "{{ lookup('file', '/var/lib/jenkins/secrets/initialAdminPassword') }}"
+    url_username: "{{ jenkins_user }}"
+    url_password: "{{ initial_admin_password.stdout }}"
     timeout: 120
     state: present
   loop: "{{ jenkins_plugins }}"

@@ -88,7 +88,7 @@ jenkins-agent-1
 ```
 
 ```sh
-$ ANSIBLE_CONFIG=./ansible.cfg ANSIBLE_COLLECTIONS_PATH=/usr/local/share/ansible/collections ansible-playbook site.yaml
+$ ANSIBLE_CONFIG=./ansible.cfg ANSIBLE_COLLECTIONS_PATH=/usr/local/share/ansible/collections ansible-playbook site.yaml --extra-vars "jenkins_master_ip=192.168.56.10"
 ```
 
 # confirm the module installation
