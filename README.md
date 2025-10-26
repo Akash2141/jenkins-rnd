@@ -51,3 +51,38 @@ Where should this private key be? The perfect location is the jenkins user's hom
 What does the target (jenkins-agent-1) need? The corresponding public key (from /var/lib/jenkins/.ssh/id_rsa.pub) must be placed in the authorized_keys file of the user Jenkins will log in as on the agent. In your setup, this is the jenkins user, so the file is /home/jenkins/.ssh/authorized_keys on the jenkins-agent-1 VM.
 
 For Jenkins: You would ssh-keygen on the jenkins-master VM as the jenkins user. Then you would copy the contents of /var/lib/jenkins/.ssh/id_rsa.pub from jenkins-master into the /home/jenkins/.ssh/authorized_keys file on jenkins-agent-1.
+
+## Halt VM
+```sh
+$ vagrant halt
+```
+
+## Again start Halted VM
+```sh
+$ vagrant up
+```
+
+## Fix for world writable directory
+If Ansible were to load ansible.cfg from a world-writable current working directory, it would create a serious security risk. So need to set up *ANSIBLE_CONFIG* variable before running. read more about it in https://docs.ansible.com/ansible/devel/reference_appendices/config.html#cfg-in-world-writable-dir
+
+Example to run ansible ping command
+```sh
+$ ANSIBLE_CONFIG=./ansible.cfg ansible jenkins-agent-1 -m ping
+```
+
+
+## Ini Example
+```ini
+jenkins-master ansible_host=192.168.56.10 ansible_port=22 ansible_user=vagrant ansible_private_key_file=~/.ssh/jenkins
+jenkins-agent-1 ansible_host=192.168.56.20 ansible_port=22 ansible_user=vagrant ansible_private_key_file=~/.ssh/jenkins
+
+[jenkins-master]
+jenkins-master
+
+[jenkins-agent-1]
+jenkins-agent-1
+
+[all:children]
+jenkins-master
+jenkins-agent-1
+```
