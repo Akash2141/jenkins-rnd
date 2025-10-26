@@ -41,7 +41,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       
       # 🟢 CRITICAL FIX: Install the community.general collection (required for Jenkins modules)
       # Must be run as the 'vagrant' user, not root (sudo), for user-level installation
-      sudo -H -u vagrant ansible-galaxy collection install community.general
+      # sudo ansible-galaxy collection install community.general
     SHELL
     
     # Execute Ansible Playbook as the 'vagrant' user

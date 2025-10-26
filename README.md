@@ -86,3 +86,19 @@ jenkins-agent-1
 jenkins-master
 jenkins-agent-1
 ```
+
+```sh
+$ ANSIBLE_CONFIG=./ansible.cfg ANSIBLE_COLLECTIONS_PATH=/usr/local/share/ansible/collections ansible-playbook site.yaml
+```
+
+# confirm the module installation
+```sh
+$ ansible-doc -s community.general.jenkins_credential
+```
+
+# Set the target path for the module installation
+```sh
+$ TARGET_PATH=/usr/local/share/ansible/collections
+$ sudo mkdir -p $TARGET_PATH
+$ sudo ansible-galaxy collection install community.general --collections-path $TARGET_PATH --force
+```
