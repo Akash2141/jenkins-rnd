@@ -19,7 +19,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     control.vm.network "private_network", ip: "192.168.56.5"
     control.vm.provider "virtualbox" do |vb|
       vb.memory = "4096"
-      vb.cpus = "2"
+      vb.cpus = "1"
     end
 
     control.vm.synced_folder "./ansible", "/home/vagrant/ansible"
@@ -64,7 +64,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     master.vm.network "private_network", ip: "192.168.56.10"
     master.vm.provider "virtualbox" do |vb|
       vb.memory = "4096"
-      vb.cpus = "3"
+      vb.cpus = "2"
     end
     # master.vm.provision "shell", inline: <<-SHELL
     #   ls -la

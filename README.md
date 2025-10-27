@@ -7,6 +7,14 @@ $ vagrant destroy -f
 ```
 
 ```sh
+$ vagrant halt
+```
+
+```sh
+$ vagrant reload
+```
+
+```sh
 # -t rsa: specifies the RSA algorithm
 # -b 4096: specifies a strong key size of 4096 bits
 # -f ~/.ssh/my_new_key: specifies the filename for the keys
@@ -106,4 +114,37 @@ $ ansible-doc -s community.general.jenkins_credential
 $ TARGET_PATH=/usr/local/share/ansible/collections
 $ sudo mkdir -p $TARGET_PATH
 $ sudo ansible-galaxy collection install community.general --collections-path $TARGET_PATH --force
+```
+
+# Ansible Command to configure Second VM
+```ini
+# Inside your hosts.ini file
+
+[vm_b_group]
+VM_B_Hostname ansible_host=VM_B_IP
+
+[vm_b_group:vars]
+# Configure a proxy for this group only
+ansible_ssh_common_args = '-o ProxyCommand="ssh -W %h:%p -q user_on_a@VM_A_IP"'
+```
+
+# SSH Tunnel to Direct SSH into Second VM
+```config
+# Configuration for the Jump Host (VM A)
+Host vm-a
+  HostName        VM_A_IP_ADDRESS  # e.g., 192.168.56.5
+  User            vagrant          # Or the user you log into VM A with
+  # Ensure the key for VM A is available (Vagrant handles this typically)
+
+# Configuration for the Target Host (VM B)
+Host vm-b
+  HostName        VM_B_IP_ADDRESS  # e.g., 192.168.56.20
+  User            vagrant          # Or the user you log into VM B with
+  # 🟢 The Magic Line: Use VM A as the Proxy/Jump Host
+  ProxyJump       vm-a
+  IdentityFile    ~/.ssh/id_rsa    # Ensure the key for VM B is available
+```
+
+```sh
+$ ssh vm-b
 ```
